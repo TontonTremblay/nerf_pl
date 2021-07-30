@@ -45,7 +45,11 @@ class BlenderDataset(Dataset):
             self.all_rays = []
             self.all_rgbs = []
             for frame in self.meta['frames']:
+                # print(frame['transform_matrix'])
+
                 pose = np.array(frame['transform_matrix'])[:3, :4]
+                # print(pose)
+                # raise()
                 self.poses += [pose]
                 c2w = torch.FloatTensor(pose)
 
@@ -86,7 +90,8 @@ class BlenderDataset(Dataset):
         else: # create data for each image separately
             frame = self.meta['frames'][idx]
             c2w = torch.FloatTensor(frame['transform_matrix'])[:3, :4]
-
+            # print(c2w)
+            # raise()
             img = Image.open(os.path.join(self.root_dir, f"{frame['file_path']}.png"))
             img = img.resize(self.img_wh, Image.LANCZOS)
             img = self.transform(img) # (4, H, W)
@@ -100,10 +105,35 @@ class BlenderDataset(Dataset):
                               self.near*torch.ones_like(rays_o[:, :1]),
                               self.far*torch.ones_like(rays_o[:, :1])],
                               1) # (H*W, 8)
-
+            # print(valid_mask.min(),valid_mask.max(),valid_mask.shape)
             sample = {'rays': rays,
                       'rgbs': img,
                       'c2w': c2w,
                       'valid_mask': valid_mask}
 
         return sample
+
+
+if __name__ == '__main__':
+
+    def visualize_ray(camera_position, ray_dirs):
+        fig = plt.figure(figsize=(12,8))
+
+        print(camera_position.unique())
+        print(ray_dirs.shape)
+
+        ax = fig.add_subplot(111, projection='3d')
+        for i in range(50):
+            i_sample = np.random.randint(0,camera_position.shape[0]-1)
+            end_point = camera_position[i] + 0.5 * ray_dirs[i]
+            ax.plot([camera_position[i][0], end_point[0]], 
+                    [camera_position[i][1], end_point[1]], 
+                    zs=[camera_position[i][2], end_point[2]])
+        plt.show()
+
+    train_ds = BlenderDataset(
+        root_dir='lego/', 
+        split='val', 
+        img_wh=(800, 800)
+    )
+    train_ds[0]
