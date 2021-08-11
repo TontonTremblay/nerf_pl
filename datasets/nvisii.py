@@ -94,7 +94,8 @@ class NvisiiDataset(Dataset):
             mask[mask>3.4028235e+37] = 0
             mask[mask<-3.4028235e+37] = 0 
             mask[mask<= 0] = 0
-            mask[mask> 0] = 255            mask = mask.astype(np.uint8)
+            mask[mask> 0] = 255            
+            mask = mask.astype(np.uint8)
             img = Image.fromarray(np.concatenate([np.array(img), mask[:, :, 0:1]], -1), 'RGBA')
 
             img = self.transform(img) # (4, h, w)
