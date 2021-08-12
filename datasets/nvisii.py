@@ -134,8 +134,6 @@ class NvisiiDataset(Dataset):
 
         else: # create data for each image separately
             c2w = self.poses[idx]
-
-
             image_path = self.image_paths[idx]
             img = Image.open(image_path).convert('RGB')
             img = img.resize(self.img_wh, Image.LANCZOS)
