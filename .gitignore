@@ -134,3 +134,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+nerf_synthetic/
+falling_google_1/
+perception_utils/

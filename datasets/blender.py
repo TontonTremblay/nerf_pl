@@ -132,8 +132,14 @@ if __name__ == '__main__':
         plt.show()
 
     train_ds = BlenderDataset(
-        root_dir='lego/', 
+        root_dir='../nerf_synthetic/lego/', 
         split='val', 
         img_wh=(800, 800)
     )
     train_ds[0]
+
+    for i in range(len(train_ds)):
+        item = train_ds[i]
+        c2w = item["c2w"]
+        c2w = torch.cat((c2w, torch.FloatTensor([[0, 0, 0, 1]])), dim=0)
+        #np.save("blender_c2ws/c2w{}.npy".format(i), c2w.numpy())

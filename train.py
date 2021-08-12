@@ -108,9 +108,8 @@ class NeRFSystem(LightningModule):
         typ = 'fine' if 'rgb_fine' in results else 'coarse'
 
         with torch.no_grad():
-            print(results[f'rgb_{typ}'].min(),results[f'rgb_{typ}'].max())
-            print(rgbs.min(),rgbs.max())
-            raise()
+            #print(results[f'rgb_{typ}'].min(),results[f'rgb_{typ}'].max())
+            #print(rgbs.min(),rgbs.max())
             psnr_ = psnr(results[f'rgb_{typ}'], rgbs)
             log['train/psnr'] = psnr_
 

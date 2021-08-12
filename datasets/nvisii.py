@@ -51,7 +51,6 @@ class NvisiiDataset(Dataset):
             # pass
 
 
-
         w, h = self.img_wh
         self.focal = 0.5*800/np.tan(0.5*0.785398) # original focal length
                                                                      # when W=800
@@ -59,8 +58,8 @@ class NvisiiDataset(Dataset):
         self.focal *= self.img_wh[0]/800 # modify focal length to match size self.img_wh
 
         # bounds, common for all scenes
-        self.near = 0.3
-        self.far = 2
+        self.near = 0.03
+        self.far = 4.5
         self.bounds = np.array([self.near, self.far])
         
         # ray directions for all pixels, same for all images (same H, W, focal)
@@ -119,7 +118,7 @@ class NvisiiDataset(Dataset):
     def __len__(self):
         if self.split == 'train':
             return len(self.all_rays)
-        if self.split == 'val':
+        else:
             return len(self.poses)
             # return 8 # only validate 8 images (to support <=8 gpus)
         # return len(self.meta['frames'])
@@ -159,7 +158,7 @@ class NvisiiDataset(Dataset):
                               self.near*torch.ones_like(rays_o[:, :1]),
                               self.far*torch.ones_like(rays_o[:, :1])],
                               1) # (H*W, 8)
-            print(rays.min(),rays.max(),rays.shape)
+            #print(rays.min(),rays.max(),rays.shape)
 
             sample = {'rays': rays,
                       'rgbs': img,
@@ -187,9 +186,16 @@ if __name__ == '__main__':
         plt.show()
 
     train_ds = NvisiiDataset(
-        root_dir='/home/titans/code/nerf_pytorch/data_tmp/falling_google_1/', 
+        root_dir='../falling_google_1/', 
         split='val', 
         img_wh=(400, 400)
     )
 
     train_ds[0]['rays']
+
+    for i in range(len(train_ds)):
+        item = train_ds[i]
+        c2w = item["c2w"]
+        c2w = torch.cat((c2w, torch.FloatTensor([[0, 0, 0, 1]])), dim=0)
+        #np.save("nvisii_c2ws/c2w{}.npy".format(i), c2w.numpy())
+
