@@ -6,7 +6,10 @@ import os
 from PIL import Image
 from torchvision import transforms as T
 
-from .ray_utils import *
+try:
+    from .ray_utils import *
+except :
+    from ray_utils import *
 
 class BlenderDataset(Dataset):
     def __init__(self, root_dir, split='train', img_wh=(800, 800)):
@@ -68,7 +71,7 @@ class BlenderDataset(Dataset):
                                              self.near*torch.ones_like(rays_o[:, :1]),
                                              self.far*torch.ones_like(rays_o[:, :1])],
                                              1)] # (h*w, 8)
-
+                # print(self.all_rays)
             self.all_rays = torch.cat(self.all_rays, 0) # (len(self.meta['frames])*h*w, 3)
             self.all_rgbs = torch.cat(self.all_rgbs, 0) # (len(self.meta['frames])*h*w, 3)
 
@@ -106,6 +109,7 @@ class BlenderDataset(Dataset):
                               self.far*torch.ones_like(rays_o[:, :1])],
                               1) # (H*W, 8)
             # print(valid_mask.min(),valid_mask.max(),valid_mask.shape)
+            print(rays)
             sample = {'rays': rays,
                       'rgbs': img,
                       'c2w': c2w,
@@ -115,31 +119,58 @@ class BlenderDataset(Dataset):
 
 
 if __name__ == '__main__':
-
-    def visualize_ray(camera_position, ray_dirs):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    import random 
+    def visualize_ray(camera_position, ray_dirs,rgbs):
         fig = plt.figure(figsize=(12,8))
-
-        print(camera_position.unique())
-        print(ray_dirs.shape)
-
         ax = fig.add_subplot(111, projection='3d')
+        # print(np.unique(camera_position))
         for i in range(50):
-            i_sample = np.random.randint(0,camera_position.shape[0]-1)
-            end_point = camera_position[i] + 0.5 * ray_dirs[i]
+            # ii_pick = random.randint(0,len(camera_position)-1)
+            # i_sample = np.random.randint(0,camera_position.shape[0]-1)
+            end_point = camera_position[i] + 2 * ray_dirs[i]
+            # end_point = ray_dirs[i]
             ax.plot([camera_position[i][0], end_point[0]], 
                     [camera_position[i][1], end_point[1]], 
                     zs=[camera_position[i][2], end_point[2]])
+            ax.scatter([camera_position[i][0]], 
+                    [camera_position[i][1]], 
+                    zs=[camera_position[i][2]],c=[rgbs[i].tolist()])
+
         plt.show()
 
+    # train_ds = BlenderDataset(
+    #     root_dir='../nerf_synthetic/lego/', 
+    #     split='val', 
+    #     img_wh=(800, 800)
+    # )
+
     train_ds = BlenderDataset(
-        root_dir='../nerf_synthetic/lego/', 
-        split='val', 
-        img_wh=(800, 800)
+        root_dir='/home/jtremblay/Downloads/lego-20210727T000712Z-001/lego/', 
+        split='train', 
+        img_wh=(400, 400)
     )
     train_ds[0]
+    # print(train_ds[0]['rays'])
+    
+    # for i in range(len(train_ds)):
+    #     item = train_ds[i]
+    #     c2w = item["c2w"]
+    #     c2w = torch.cat((c2w, torch.FloatTensor([[0, 0, 0, 1]])), dim=0)
+    #     #np.save("blender_c2ws/c2w{}.npy".format(i), c2w.numpy())
+    
+    cam_pos = []
+    ray_end = []
+    rgbs = []
 
-    for i in range(len(train_ds)):
-        item = train_ds[i]
-        c2w = item["c2w"]
-        c2w = torch.cat((c2w, torch.FloatTensor([[0, 0, 0, 1]])), dim=0)
-        #np.save("blender_c2ws/c2w{}.npy".format(i), c2w.numpy())
+    for ii in range(100):
+        i = random.randint(0,len(train_ds)-1)
+        
+        data = train_ds[i]['rays']
+        rgbs.append(train_ds[i]['rgbs'])
+        cam_pos.append([data[0],data[1],data[2],])
+        ray_end.append([data[3],data[4],data[5],])
+    # print(train_ds[0]['rays']
+
+    visualize_ray(np.array(cam_pos),np.array(ray_end),np.array(rgbs))

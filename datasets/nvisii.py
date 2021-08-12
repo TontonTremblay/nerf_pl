@@ -90,8 +90,10 @@ class NvisiiDataset(Dataset):
             mask = cv2.imread(mask_path,  
                                     cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH) 
             mask = cv2.resize(mask,self.img_wh,cv2.INTER_NEAREST)
-            mask[mask == mask.max()] = 0
-            mask[mask > 0] = 255
+            mask[mask>3.4028235e+37] = 0
+            mask[mask<-3.4028235e+37] = 0 
+            mask[mask<= 0] = 0
+            mask[mask> 0] = 255            
             mask = mask.astype(np.uint8)
             img = Image.fromarray(np.concatenate([np.array(img), mask[:, :, 0:1]], -1), 'RGBA')
 
@@ -103,7 +105,9 @@ class NvisiiDataset(Dataset):
             self.all_rgbs.append(img)
             
             rays_o, rays_d = get_rays(self.directions, c2w) # both (h*w, 3)
-            
+            # print(rays_o)
+            # print(pose)
+            # raise()
             self.all_rays += [torch.cat([rays_o, rays_d, 
                                          self.near*torch.ones_like(rays_o[:, :1]),
                                          self.far*torch.ones_like(rays_o[:, :1])],
@@ -158,7 +162,7 @@ class NvisiiDataset(Dataset):
                               self.near*torch.ones_like(rays_o[:, :1]),
                               self.far*torch.ones_like(rays_o[:, :1])],
                               1) # (H*W, 8)
-            #print(rays.min(),rays.max(),rays.shape)
+            # print(rays.min(),rays.max(),rays.shape)
 
             sample = {'rays': rays,
                       'rgbs': img,
@@ -169,33 +173,57 @@ class NvisiiDataset(Dataset):
 
 
 if __name__ == '__main__':
-
-    def visualize_ray(camera_position, ray_dirs):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    import random 
+    def visualize_ray(camera_position, ray_dirs,rgbs):
         fig = plt.figure(figsize=(12,8))
-
-        print(camera_position.unique())
-        print(ray_dirs.shape)
-
         ax = fig.add_subplot(111, projection='3d')
+        # print(np.unique(camera_position))
         for i in range(50):
-            i_sample = np.random.randint(0,camera_position.shape[0]-1)
-            end_point = camera_position[i] + 0.5 * ray_dirs[i]
+            # ii_pick = random.randint(0,len(camera_position)-1)
+            # i_sample = np.random.randint(0,camera_position.shape[0]-1)
+            end_point = camera_position[i] + 2 * ray_dirs[i]
+            # end_point = ray_dirs[i]
             ax.plot([camera_position[i][0], end_point[0]], 
                     [camera_position[i][1], end_point[1]], 
                     zs=[camera_position[i][2], end_point[2]])
+            ax.scatter([camera_position[i][0]], 
+                    [camera_position[i][1]], 
+                    zs=[camera_position[i][2]],c=[rgbs[i].tolist()])
+
         plt.show()
 
     train_ds = NvisiiDataset(
-        root_dir='../falling_google_1/', 
-        split='val', 
+        # root_dir='../falling_google_1/', 
+        # split='val', 
+        
+        # root_dir='/home/titans/code/nerf_pytorch/data_tmp/falling_google_1/', 
+        root_dir='/home/jtremblay/code/conditional-gan-inverse-rendering/S-GAN/falling_1/falling_google_1/', 
+        split='train', 
         img_wh=(400, 400)
     )
+    cam_pos = []
+    ray_end = []
+    rgbs = []
+
+
+    for ii in range(100):
+        i = random.randint(0,len(train_ds)-1)
+        
+        data = train_ds[i]['rays']
+        rgbs.append(train_ds[i]['rgbs'])
+        cam_pos.append([data[0],data[1],data[2],])
+        ray_end.append([data[3],data[4],data[5],])
+    # print(train_ds[0]['rays']
+
+    visualize_ray(np.array(cam_pos),np.array(ray_end),np.array(rgbs))
 
     train_ds[0]['rays']
 
-    for i in range(len(train_ds)):
-        item = train_ds[i]
-        c2w = item["c2w"]
-        c2w = torch.cat((c2w, torch.FloatTensor([[0, 0, 0, 1]])), dim=0)
-        #np.save("nvisii_c2ws/c2w{}.npy".format(i), c2w.numpy())
+    # for i in range(len(train_ds)):
+    #     item = train_ds[i]
+    #     c2w = item["c2w"]
+    #     c2w = torch.cat((c2w, torch.FloatTensor([[0, 0, 0, 1]])), dim=0)
+    #     #np.save("nvisii_c2ws/c2w{}.npy".format(i), c2w.numpy())
 
