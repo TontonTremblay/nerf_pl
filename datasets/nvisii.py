@@ -36,12 +36,12 @@ class NvisiiDataset(Dataset):
         self.json_files = json_files
         if self.split == 'train':
             # json_files = json_files[0:2]
-            json_files = json_files[0:100]
+            json_files = json_files[0:250]
         elif self.split == 'val':            
             # json_files = json_files[100:101]
-            json_files = json_files[100:105]
+            json_files = json_files[250:255]
         elif self.split == 'test':
-            json_files = json_files[105:]
+            json_files = json_files[255:]
 
         transforms = []
         for i_index, json_file in enumerate(json_files):   

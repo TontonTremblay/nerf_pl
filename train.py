@@ -115,10 +115,13 @@ class NeRFSystem(LightningModule):
             # raise()
             psnr_ = psnr(results[f'rgb_{typ}'], rgbs)
             log['train/psnr'] = psnr_
+            self.log('train/psnr', psnr_)
+            self.log('train/loss', log['train/loss'])
+
 
         return {'loss': loss,
-                'progress_bar': {'train_psnr': psnr_},
-                'log': log
+                # 'progress_bar': {'train_psnr': psnr_.detach()},
+                # 'log': log
                }
 
     def validation_step(self, batch, batch_nb):
@@ -140,6 +143,10 @@ class NeRFSystem(LightningModule):
                                                stack, self.global_step)
 
         log['val_psnr'] = psnr(results[f'rgb_{typ}'], rgbs)
+        
+        self.log('val_psnr', log['val_psnr'])
+        self.log('val_loss', log['val_loss'])
+
         return log
 
     def validation_epoch_end(self, outputs):
@@ -176,7 +183,7 @@ if __name__ == '__main__':
                       logger=logger,
                       # early_stop_callback=None,
                       weights_summary=None,
-                      progress_bar_refresh_rate=10,
+                      progress_bar_refresh_rate=2,
                       gpus=hparams.num_gpus,
                       distributed_backend='ddp' if hparams.num_gpus>1 else None,
                       num_sanity_val_steps=1,
