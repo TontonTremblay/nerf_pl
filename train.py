@@ -22,13 +22,15 @@ from metrics import *
 # pytorch-lightning
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.logging import TestTubeLogger
+from pytorch_lightning.loggers import TestTubeLogger
 
 class NeRFSystem(LightningModule):
     def __init__(self, hparams):
         super(NeRFSystem, self).__init__()
-        self.hparams = hparams
-
+        # print(hparams)
+        # self.hparams = hparams
+        # self.hparams.update(hparams)
+        self.save_hyperparameters(hparams)
         self.loss = loss_dict[hparams.loss_type]()
 
         self.embedding_xyz = Embedding(3, 10) # 10 is the default number
@@ -154,9 +156,9 @@ class NeRFSystem(LightningModule):
 if __name__ == '__main__':
     hparams = get_opts()
     system = NeRFSystem(hparams)
-    checkpoint_callback = ModelCheckpoint(filepath=os.path.join(f'ckpts/{hparams.exp_name}',
+    checkpoint_callback_instance = ModelCheckpoint(dirpath=os.path.join(f'ckpts/{hparams.exp_name}',
                                                                 '{epoch:d}'),
-                                          monitor='val/loss',
+                                          monitor='val_loss',
                                           mode='min',
                                           save_top_k=5,)
 
@@ -168,16 +170,19 @@ if __name__ == '__main__':
     )
 
     trainer = Trainer(max_epochs=hparams.num_epochs,
-                      checkpoint_callback=checkpoint_callback,
+                      # checkpoint_callback=checkpoint_callback_instance,
+                      callbacks=[checkpoint_callback_instance],
                       resume_from_checkpoint=hparams.ckpt_path,
                       logger=logger,
-                      early_stop_callback=None,
+                      # early_stop_callback=None,
                       weights_summary=None,
-                      progress_bar_refresh_rate=1,
+                      progress_bar_refresh_rate=10,
                       gpus=hparams.num_gpus,
                       distributed_backend='ddp' if hparams.num_gpus>1 else None,
                       num_sanity_val_steps=1,
                       benchmark=True,
-                      profiler=hparams.num_gpus==1)
+                      # profiler=hparams.num_gpus==1
+                      profiler="simple"
+                      )
 
     trainer.fit(system)
